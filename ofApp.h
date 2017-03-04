@@ -118,7 +118,7 @@ class ofApp : public ofBaseApp{
 
 			//-- output *** HEARING DISTORTED STUFF ***
 			for (int i = 0; i < outSize; ++i)
-				out[i] = this->bufFromOf.interleavedBuffer[i];
+				out[i] = this->bufFromPhoton.interleavedBuffer[i];
 
 			////-- test: simply output from bufFromOf, works. I think the problem is with the bufFromPhoton data
 			//for (int i = 0; i < inSize; ++i)
