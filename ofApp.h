@@ -30,6 +30,7 @@ class ofApp : public ofBaseApp{
 
 
 		//==== PHONON 3D or Steam Audio
+
 		//store data for the IPLAudioBuffer
 		IPLfloat32 iplDataDry[512];
 		IPLfloat32 iplDataSpatilized[1024];
@@ -57,7 +58,7 @@ class ofApp : public ofBaseApp{
 			IPLAudioFormat formatIn;
 			formatIn.channelLayoutType = IPL_CHANNELLAYOUTTYPE_SPEAKERS; // intended to be played back by a single speaker
 			formatIn.channelLayout = IPL_CHANNELLAYOUT_STEREO; //play over headphones
-			formatIn.numSpeakers = 1; //number of channels in the audio data, input is mono
+			formatIn.numSpeakers = 2; //number of channels in the audio data, input is mono, but buffer In MUST HAVE SAME CHANNELS WITH BUFFER OUT, so 2 here
 			formatIn.channelOrder = IPL_CHANNELORDER_INTERLEAVED; //LRLRLR...
 			//setup two speakers, one on left, one on right, assume radius is 400
 			IPLVector3 speakers[2];
@@ -71,7 +72,7 @@ class ofApp : public ofBaseApp{
 			
 			bufFromOf.format = formatIn;
 			bufFromOf.numSamples = 512;
-			bufFromOf.interleavedBuffer = new IPLfloat32[bufFromOf.numSamples];
+			bufFromOf.interleavedBuffer = new IPLfloat32[bufFromOf.numSamples * formatIn.numSpeakers];
 
 			//-- buffer spatialize (for Phonon)
 			IPLAudioFormat formatOut;
@@ -83,7 +84,7 @@ class ofApp : public ofBaseApp{
 
 			bufFromPhoton.format = formatOut;
 			bufFromPhoton.numSamples = 512;
-			bufFromPhoton.interleavedBuffer = new IPLfloat32[bufFromPhoton.numSamples * 2]; //output is stereo, so multiple by 2 channels
+			bufFromPhoton.interleavedBuffer = new IPLfloat32[bufFromPhoton.numSamples * formatOut.numSpeakers]; //output is stereo, so multiple by 2 channels
 
 			//--- create renderer & effects
 			binRen = new IPLhandle; //IMPORTANT, need to allocate it first, if not, will raise error
@@ -109,23 +110,18 @@ class ofApp : public ofBaseApp{
 
 			//-- get the input samples to IPL buffer
 			for (int i = 0; i < inSize; ++i)
-				iplDataDry[i] = in[i];
+			{
+				iplDataDry[i * 2] = in[i];
+				iplDataDry[i * 2 + 1] = in[i];
+			}
 			this->bufFromOf.interleavedBuffer = iplDataDry;
-
 
 			//-- spatialize
 			iplApplyBinauralEffect(*binEff, bufFromOf, dir, IPL_HRTFINTERPOLATION_NEAREST, bufFromPhoton);
 
-			//-- output *** HEARING DISTORTED STUFF ***
+			//-- output 
 			for (int i = 0; i < outSize; ++i)
 				out[i] = this->bufFromPhoton.interleavedBuffer[i];
-
-			////-- test: simply output from bufFromOf, works. I think the problem is with the bufFromPhoton data
-			//for (int i = 0; i < inSize; ++i)
-			//{
-			//	out[i * 2] = bufFromOf.interleavedBuffer[i];
-			//	out[i * 2 + 1] = bufFromOf.interleavedBuffer[i];
-			//}
 
 		}
 
